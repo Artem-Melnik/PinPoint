@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 void main() {
-  runApp(const PinpointApp());
+  runApp(const PinPointApp());
 }
 
-class PinpointApp extends StatelessWidget {
-  const PinpointApp({super.key});
+class PinPointApp extends StatelessWidget {
+  const PinPointApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: "Pinpoint",
+    return MaterialApp(
+        title: "PinPoint",
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
         home: MainInterface());
   }
