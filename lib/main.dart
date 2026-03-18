@@ -14,7 +14,7 @@ class PinPointApp extends StatelessWidget {
         title: "PinPoint",
         debugShowCheckedModeBanner: false,
         theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
-        home: MainInterface());
+        home: const MainInterface());
   }
 }
 
