@@ -1,0 +1,114 @@
+[
+  {
+    "id":  "001",
+    "name": "C++ Intro Session",
+    "description": "Hosted by real C++ experts.",
+    "location": {
+      "name": "E2-180",
+      "address": "1156 High St",
+      "city": "Santa Cruz",
+      "state": "CA",
+      "zipCode": "95064",
+      "latitude": 37.00096773839419,
+      "longitude": -122.06251944750188,
+      "isOnline": false,
+      "onlineUrl": null
+    },
+    "startTime": "2026-04-15 14:30:00",
+    "endTime": "2026-04-15 15:30:00",
+    "organizationId": "001",
+    "tagIds": ["001"],
+    "imageUrls": ["https://picsum.photos/200"],
+    "thumbnailUrl": "https://picsum.photos/200",
+    "attendance": {
+      "requiresRSVP": true,
+      "maxCapacity": 100,
+      "rsvpDeadline": "2026-04-15 14:30:00",
+      "records": [
+        {
+          "userId": "001",
+          "status": "going",
+          "rsvpAt": "2026-04-15 14:30:00",
+          "checkedIn": true,
+          "checkedInAt": "2026-04-15 14:30:00"
+        }
+      ]
+    },
+    "status": "published",
+    "createdAt": "2026-04-15 14:30:00",
+    "updatedAt": "2026-04-15 14:30:00",
+    "createdByUserId": "001"
+  },
+  {
+    "id":  "002",
+    "name": "Web Development Workshop",
+    "description": "Come and learn web development!",
+    "location": {
+      "name": "E2-192",
+      "address": "1156 High St",
+      "city": "Santa Cruz",
+      "state": "CA",
+      "zipCode": "95064",
+      "latitude": 37.00091967288668,
+      "longitude": -122.06271094612978,
+      "isOnline": false,
+      "onlineUrl": null
+    },
+    "startTime": "2026-04-15 15:30:00",
+    "endTime": "2026-04-15 16:30:00",
+    "organizationId": "002",
+    "tagIds": ["002"],
+    "imageUrls": ["https://picsum.photos/201"],
+    "thumbnailUrl": "https://picsum.photos/201",
+    "attendance": {
+      "requiresRSVP": true,
+      "maxCapacity": 100,
+      "rsvpDeadline": "2026-04-15 15:30:00",
+      "records": [
+        {
+          "userId": "002",
+          "status": "going",
+          "rsvpAt": "2026-04-15 15:20:00",
+          "checkedIn": true,
+          "checkedInAt": "2026-04-15 15:30:00"
+        }
+      ]
+    },
+    "status": "published",
+    "createdAt": "2026-04-15 15:00:00",
+    "updatedAt": "2026-04-15 15:15:00",
+    "createdByUserId": "002"
+  },
+  {
+    "id":  "003",
+    "name": "Online Resume Workshop",
+    "description": "Sharpen your resume.",
+    "location": {
+      "name": "Online",
+      "address": null,
+      "city": null,
+      "state": null,
+      "zipCode": null,
+      "latitude": null,
+      "longitude": null,
+      "isOnline": true,
+      "onlineUrl": "zoom.com/meeting003"
+    },
+    "startTime": "2026-04-15 16:30:00",
+    "endTime": "2026-04-15 17:30:00",
+    "organizationId": "003",
+    "tagIds": ["003"],
+    "imageUrls": ["https://picsum.photos/202"],
+    "thumbnailUrl": "https://picsum.photos/202",
+    "attendance": {
+      "requiresRSVP": false,
+      "maxCapacity": 50,
+      "rsvpDeadline": null,
+      "records": []
+    },
+    "status": "published",
+    "createdAt": "2026-04-15 16:00:00",
+    "updatedAt": "2026-04-15 16:15:00",
+    "createdByUserId": "003"
+  }
+]

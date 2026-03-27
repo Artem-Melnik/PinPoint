@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'map_view.dart';
+import 'search_view.dart';
+import './models/models.dart';
 
 void main() {
   runApp(const PinPointApp());
@@ -26,29 +28,35 @@ class MainInterface extends StatefulWidget {
 }
 
 class _MainInterfaceState extends State<MainInterface> {
+  Event? _selectedEventFromSearch;
   int _selectedIndex = 0;
-  late final List<({IconData icon, IconData activeIcon, String label, Widget page})>
+  late final List<({IconData icon, IconData activeIcon, String label})>
     _destinations;
 
-  static const LatLng _center = LatLng(36.99264793101842, -122.05781821405948);
-  static const CameraPosition _initialPosition = CameraPosition(target: _center, zoom: 15.0);
+  // Handles behavior when an event is selected from the search view
+  void _handleSearchEventSelected(Event event) {
+    setState(() {
+      _selectedIndex = 0;
+      _selectedEventFromSearch = event;
+    });
+  }
 
-  GoogleMapController? _mapController;
-
-  // Builds Google Maps view and implements controller
+  // Builds Google Maps view for homepage
   Widget _buildMapView() {
-    return GoogleMap(
-      initialCameraPosition: _initialPosition,
-      onMapCreated: (controller) {
-        _mapController = controller;
-      },
-      myLocationEnabled: true,
-      myLocationButtonEnabled: true,
+    return MapView(
+      selectedEvent: _selectedEventFromSearch,
     );
   }
 
-  // Holds page destinations
+  // Builds event search page
+  Widget _buildSearchView() {
+    return SearchView(
+      onEventSelected: _handleSearchEventSelected,
+    );
+  }
+
   @override
+  // Holds page destinations
   void initState() {
     super.initState();
 
@@ -57,30 +65,27 @@ class _MainInterfaceState extends State<MainInterface> {
       icon: Icons.map_outlined,
       activeIcon: Icons.map,
       label: "Home",
-      page: _buildMapView()
       ),
       (
       icon: Icons.search_outlined,
       activeIcon: Icons.search,
       label: "Search",
-      page: const Center(child: Text('Search'))
       ),
       (
       icon: Icons.favorite_outlined,
       activeIcon: Icons.favorite,
       label: "Favorites",
-      page: const Center(child: Text('Favorites'))
       ),
       (
       icon: Icons.person_outlined,
       activeIcon: Icons.person,
       label: "Profile",
-      page: const Center(child: Text('Profile'))
       )
     ];
   }
 
-  // Evaluates whether the layout should be for Mobile or Desktop
+  @override
+  // Evaluates whether the layout should be for mobile or desktop
   // Builds corresponding layout
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -91,12 +96,17 @@ class _MainInterfaceState extends State<MainInterface> {
     );
   }
 
-  // Building Navigation Bar and Pages for Mobile
+  // Building navigation bar and pages for mobile layout
   Widget _buildNarrowLayout() {
     return Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
-          children: _destinations.map((destination) => destination.page).toList()
+          children: [
+            _buildMapView(),
+            _buildSearchView(),
+            const Center(child: Text('Favorites')),
+            const Center(child: Text('Profile')),
+          ],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
@@ -113,7 +123,7 @@ class _MainInterfaceState extends State<MainInterface> {
     );
   }
 
-  // Building Navigation Rail and Page for Desktop
+  // Builds navigation rail and pages for desktop layout
   Widget _buildWideLayout() {
     return Scaffold(
       body: Row(
@@ -136,7 +146,12 @@ class _MainInterfaceState extends State<MainInterface> {
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(child: IndexedStack(
               index: _selectedIndex,
-              children: _destinations.map((destination) => destination.page).toList()
+              children: [
+                _buildMapView(),
+                _buildSearchView(),
+                const Center(child: Text('Favorites')),
+                const Center(child: Text('Profile')),
+              ],
             ),
           ),
         ],
