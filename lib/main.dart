@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'map_view.dart';
 import 'search_view.dart';
-import './models/models.dart';
+import 'models/models.dart';
+import 'models/app_destination.dart';
 
 void main() {
   runApp(const PinPointApp());
@@ -30,8 +31,12 @@ class MainInterface extends StatefulWidget {
 class _MainInterfaceState extends State<MainInterface> {
   Event? _selectedEventFromSearch;
   int _selectedIndex = 0;
-  late final List<({IconData icon, IconData activeIcon, String label})>
-    _destinations;
+
+  static const double _desktopBreakpoint = 900;
+
+  bool _isDesktop(BuildContext context) {
+    return MediaQuery.of(context).size.width >= _desktopBreakpoint;
+  }
 
   // Handles behavior when an event is selected from the search view
   void _handleSearchEventSelected(Event event) {
@@ -42,9 +47,31 @@ class _MainInterfaceState extends State<MainInterface> {
   }
 
   // Builds Google Maps view for homepage
-  Widget _buildMapView() {
-    return MapView(
+  Widget _buildMapView(BuildContext context) {
+    final Widget map = MapView(
       selectedEvent: _selectedEventFromSearch,
+    );
+
+    if (!_isDesktop(context)) {
+      return map;
+    }
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 380,
+          child: Material(
+            elevation: 2,
+            color: Theme.of(context).colorScheme.surface,
+            child: SearchView(
+              onEventSelected: _handleSearchEventSelected,
+              embedded: true,
+            ),
+          ),
+        ),
+        const VerticalDivider(thickness: 1, width: 1),
+        Expanded(child: map),
+      ],
     );
   }
 
@@ -55,107 +82,151 @@ class _MainInterfaceState extends State<MainInterface> {
     );
   }
 
+  // Page building handler
+  List<Widget> _buildPages(BuildContext context) {
+    final isDesktop = _isDesktop(context);
+
+    return [
+      _buildMapView(context),
+      if (!isDesktop) _buildSearchView(),
+      const Center(child: Text('Favorites')),
+      const Center(child: Text('Profile')),
+    ];
+  }
+
+  // Builds page destination objects
+  List<AppDestination> _buildDestinations(BuildContext context) {
+    final isDesktop = _isDesktop(context);
+
+    return [
+      AppDestination(
+        icon: Icons.map_outlined,
+        activeIcon: Icons.map,
+        label: "Home",
+      ),
+      if (!isDesktop)
+        AppDestination(
+          icon: Icons.search_outlined,
+          activeIcon: Icons.search,
+          label: "Search",
+        ),
+      AppDestination(
+        icon: Icons.favorite_outlined,
+        activeIcon: Icons.favorite,
+        label: "Favorites",
+      ),
+    ];
+  }
+
   @override
-  // Holds page destinations
   void initState() {
     super.initState();
-
-    _destinations = [
-      (
-      icon: Icons.map_outlined,
-      activeIcon: Icons.map,
-      label: "Home",
-      ),
-      (
-      icon: Icons.search_outlined,
-      activeIcon: Icons.search,
-      label: "Search",
-      ),
-      (
-      icon: Icons.favorite_outlined,
-      activeIcon: Icons.favorite,
-      label: "Favorites",
-      ),
-      (
-      icon: Icons.person_outlined,
-      activeIcon: Icons.person,
-      label: "Profile",
-      )
-    ];
   }
 
   @override
   // Evaluates whether the layout should be for mobile or desktop
   // Builds corresponding layout
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 600;
-          return isWide ? _buildWideLayout() : _buildNarrowLayout();
-        }
+    final destinations = _buildDestinations(context);
+    final pages = _buildPages(context);
+
+    final safeSelectedIndex =
+      _selectedIndex >= pages.length ? 0 : _selectedIndex;
+
+    final useRail = MediaQuery.of(context).size.width >= 700;
+
+    return Scaffold(
+      body: useRail
+          ? _buildWideLayout(
+              context,
+              destinations,
+              pages,
+              safeSelectedIndex,
+            )
+          : _buildNarrowLayout(
+              context,
+              destinations,
+              pages,
+              safeSelectedIndex,
+            ),
+      bottomNavigationBar: useRail
+        ? null
+        : _buildBottomNav(
+            destinations,
+            safeSelectedIndex,
+          ),
+    );
+  }
+
+  // Building bottom navigation bar
+  Widget _buildBottomNav(
+      List<AppDestination> destinations,
+      int selectedIndex,
+      ) {
+    return NavigationBar(
+      selectedIndex: selectedIndex,
+      onDestinationSelected: (index) =>
+          setState(() => _selectedIndex = index),
+      destinations: destinations
+          .map(
+            (destination) =>
+            NavigationDestination(
+              icon: Icon(destination.icon),
+              selectedIcon: Icon(destination.activeIcon),
+              label: destination.label,
+            ),
+      ).toList(),
     );
   }
 
   // Building navigation bar and pages for mobile layout
-  Widget _buildNarrowLayout() {
-    return Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: [
-            _buildMapView(),
-            _buildSearchView(),
-            const Center(child: Text('Favorites')),
-            const Center(child: Text('Profile')),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) =>
-              setState(() => _selectedIndex = index),
-          destinations: _destinations
-              .map((destination) =>
-              NavigationDestination(
-                icon: Icon(destination.icon),
-                selectedIcon: Icon(destination.activeIcon),
-                label: destination.label,
-              )).toList(),
-        )
-    );
+  Widget _buildNarrowLayout(
+      BuildContext context,
+      List<AppDestination> destinations,
+      List<Widget> pages,
+      int selectedIndex,
+      ) {
+        return IndexedStack(
+          index: selectedIndex,
+          children: pages,
+        );
   }
 
   // Builds navigation rail and pages for desktop layout
-  Widget _buildWideLayout() {
-    return Scaffold(
-      body: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) =>
-                setState(() => _selectedIndex = index),
-            labelType: NavigationRailLabelType.all,
-            leading: FloatingActionButton(onPressed: () {}, child: const Icon(Icons.add),
-            ),
-            destinations: _destinations
-                .map((destination) =>
-                NavigationRailDestination(
-                  icon: Icon(destination.icon),
-                  selectedIcon: Icon(destination.activeIcon),
-                  label: Text(destination.label),
-                )).toList(),
+  Widget _buildWideLayout(
+      BuildContext context,
+      List<AppDestination> destinations,
+      List<Widget> pages,
+      int selectedIndex,
+      ) {
+    return Row(
+      children: [
+        NavigationRail(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (index) =>
+              setState(() => _selectedIndex = index),
+          labelType: NavigationRailLabelType.all,
+          leading: FloatingActionButton(
+            onPressed: () {},
+            child: const Icon(Icons.add),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                _buildMapView(),
-                _buildSearchView(),
-                const Center(child: Text('Favorites')),
-                const Center(child: Text('Profile')),
-              ],
-            ),
+          destinations: destinations
+              .map(
+                  (destination) => NavigationRailDestination(
+                    icon: Icon(destination.icon),
+                    selectedIcon: Icon(destination.activeIcon),
+                    label: Text(destination.label),
+                  ),
+              ).toList(),
+        ),
+        const VerticalDivider(thickness: 1, width: 1),
+        Expanded(
+          child: IndexedStack(
+            index: selectedIndex,
+            children: pages,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

@@ -8,10 +8,12 @@ import 'package:intl/intl.dart';
 // is selected to be shown on the map
 class SearchView extends StatefulWidget {
   final void Function(Event event)? onEventSelected;
+  final bool embedded;
 
   const SearchView({
     super.key,
     this.onEventSelected,
+    this.embedded = false,
   });
 
   @override
@@ -96,42 +98,52 @@ class _SearchViewState extends State<SearchView> {
   }
 
   @override
+  // Builds search view as either embedded in the map view or as its own page
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filterEvents,
-              decoration: InputDecoration(
-                hintText: 'Search events, rooms, descriptions...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isNotEmpty ? IconButton(
-                                                  onPressed: () {
-                                                    _searchController.clear();
-                                                    _filterEvents('');
-                                                  },
-                                                  icon: const Icon(Icons.clear),
-                                                ) : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+    final content = Column(
+      children: [
+        if (widget.embedded)
+          Padding (
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Search Events',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
           ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredEvents.isEmpty
-                  ? const Center(
-                    child: Text(
-                      'No events found.\nTry another keyword.',
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : ListView.builder(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _filterEvents,
+            decoration: InputDecoration(
+              hintText: 'Search events, rooms, descriptions...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _query.isNotEmpty ? IconButton(
+                onPressed: () {
+                  _searchController.clear();
+                  _filterEvents('');
+                },
+                icon: const Icon(Icons.clear),
+              ) : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _filteredEvents.isEmpty
+              ? const Center(
+                child: Text(
+                  'No events found.\nTry another keyword.',
+                  textAlign: TextAlign.center,
+                ),
+              ) : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   itemCount: _filteredEvents.length,
                   itemBuilder: (context, index) {
@@ -139,10 +151,11 @@ class _SearchViewState extends State<SearchView> {
                     return _buildEventCard(event);
                   },
                 ),
-          ),
-        ],
-      )
+        ),
+      ],
     );
+
+    return widget.embedded ? content : SafeArea(child: content);
   }
 
   // Builds an event card within the search for an existing event
