@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'map_view.dart';
 import 'search_view.dart';
+import 'event_form_dialog.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import 'models/models.dart';
 import 'models/app_destination.dart';
 
@@ -32,7 +35,22 @@ class _MainInterfaceState extends State<MainInterface> {
   Event? _selectedEventFromSearch;
   int _selectedIndex = 0;
 
+  List<Event> _events =[];
+  bool _isLoadingEvents = true;
+  bool _isEventDialogOpen = false;
+
+  MemberRole _currentUserRole = MemberRole.admin;
+
   static const double _desktopBreakpoint = 900;
+
+  bool _canManageEvents() {
+    return _currentUserRole == MemberRole.owner ||
+      _currentUserRole == MemberRole.admin;
+  }
+
+  bool _isOwner() {
+    return _currentUserRole == MemberRole.owner;
+  }
 
   bool _isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width >= _desktopBreakpoint;
@@ -48,8 +66,17 @@ class _MainInterfaceState extends State<MainInterface> {
 
   // Builds Google Maps view for homepage
   Widget _buildMapView(BuildContext context) {
+    if (_isLoadingEvents) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final Widget map = MapView(
+      events: _events,
       selectedEvent: _selectedEventFromSearch,
+      isInteractionLocked: _isEventDialogOpen,
+      canManageEvents: _canManageEvents(),
+      onEditEvent: _openEditEventDialog,
+      onDeleteEvent: _confirmDeleteEvent,
     );
 
     if (!_isDesktop(context)) {
@@ -64,7 +91,11 @@ class _MainInterfaceState extends State<MainInterface> {
             elevation: 2,
             color: Theme.of(context).colorScheme.surface,
             child: SearchView(
+              events: _events,
               onEventSelected: _handleSearchEventSelected,
+              canManageEvents: _canManageEvents(),
+              onEditEvent: _openEditEventDialog,
+              onDeleteEvent: _confirmDeleteEvent,
               embedded: true,
             ),
           ),
@@ -77,8 +108,16 @@ class _MainInterfaceState extends State<MainInterface> {
 
   // Builds event search page
   Widget _buildSearchView() {
+    if (_isLoadingEvents) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SearchView(
+      events: _events,
       onEventSelected: _handleSearchEventSelected,
+      canManageEvents: _canManageEvents(),
+      onEditEvent: _openEditEventDialog,
+      onDeleteEvent: _confirmDeleteEvent,
     );
   }
 
@@ -121,6 +160,131 @@ class _MainInterfaceState extends State<MainInterface> {
   @override
   void initState() {
     super.initState();
+    _loadEvents();
+  }
+
+  // Loads events from JSON file (for test purposes)
+  Future<void> _loadEvents() async {
+    try {
+      final String response = await rootBundle.loadString('assets/test_events.json');
+      final List<dynamic> decodedJson = json.decode(response) as List<dynamic>;
+
+      final List<Event> loadedEvents = decodedJson
+          .map((item) => Event.fromJson(item as Map<String, dynamic>))
+          .toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+      setState(() {
+        _events = loadedEvents;
+        _isLoadingEvents = false;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Error loading events: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      setState(() {
+        _isLoadingEvents = false;
+      });
+    }
+  }
+
+  // Event creation handler
+  void _createEvent(Event event) {
+    setState(() {
+      _events = [..._events, event]
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    });
+  }
+
+  // Event updating handler
+  void _updateEvent(Event updatedEvent) {
+    setState(() {
+      _events = _events
+          .map((event) => event.id == updatedEvent.id ? updatedEvent : event)
+          .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    });
+  }
+
+  // Event deletion handler
+  void _deleteEvent(String eventId) {
+    setState(() {
+      _events = _events.where((event) => event.id != eventId).toList();
+    });
+  }
+
+  // Event creation dialog handler
+  Future<void> _openCreateEventDialog() async {
+    setState(() {
+      _isEventDialogOpen = true;
+    });
+
+    final Event? createdEvent = await showDialog<Event>(
+      context: context,
+      builder: (context) => const EventFormDialog(),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isEventDialogOpen = false;
+    });
+
+    if (createdEvent != null) {
+      _createEvent(createdEvent);
+    }
+  }
+
+  // Event editing dialog handler
+  Future<void> _openEditEventDialog(Event event) async {
+    setState(() {
+      _isEventDialogOpen = true;
+    });
+
+    final Event? updatedEvent = await showDialog<Event>(
+      context: context,
+      builder: (context) => EventFormDialog(initialEvent: event),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isEventDialogOpen = false;
+    });
+
+    if (updatedEvent != null) {
+      _updateEvent(updatedEvent);
+    }
+  }
+
+  // Event deletion confirmation dialog handler
+  Future<bool> _confirmDeleteEvent(Event event) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Event'),
+          content: Text('Are you sure you want to delete "${event.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      }
+    );
+
+    if (confirmed == true) {
+      _deleteEvent(event.id);
+      return true;
+    }
+
+    return false;
   }
 
   @override
@@ -155,6 +319,12 @@ class _MainInterfaceState extends State<MainInterface> {
             destinations,
             safeSelectedIndex,
           ),
+      floatingActionButton: _canManageEvents()
+        ? FloatingActionButton(
+          onPressed: _openCreateEventDialog,
+          child: const Icon(Icons.add),
+        )
+        : null,
     );
   }
 
@@ -206,10 +376,6 @@ class _MainInterfaceState extends State<MainInterface> {
           onDestinationSelected: (index) =>
               setState(() => _selectedIndex = index),
           labelType: NavigationRailLabelType.all,
-          leading: FloatingActionButton(
-            onPressed: () {},
-            child: const Icon(Icons.add),
-          ),
           destinations: destinations
               .map(
                   (destination) => NavigationRailDestination(

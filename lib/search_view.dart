@@ -1,18 +1,24 @@
 import 'models/models.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 // Holds a passed in callback that returns to the map view when an event
 // is selected to be shown on the map
 class SearchView extends StatefulWidget {
+  final List<Event> events;
   final void Function(Event event)? onEventSelected;
+  final bool canManageEvents;
+  final void Function(Event event)? onEditEvent;
+  final Future<bool> Function(Event event)? onDeleteEvent;
   final bool embedded;
 
   const SearchView({
     super.key,
+    required this.events,
     this.onEventSelected,
+    this.canManageEvents = false,
+    this.onEditEvent,
+    this.onDeleteEvent,
     this.embedded = false,
   });
 
@@ -23,7 +29,6 @@ class SearchView extends StatefulWidget {
 class _SearchViewState extends State<SearchView> {
   List<Event> _allEvents = [];
   List<Event> _filteredEvents = [];
-  bool _isLoading = true;
   String _query = '';
 
   final TextEditingController _searchController = TextEditingController();
@@ -31,54 +36,52 @@ class _SearchViewState extends State<SearchView> {
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    _allEvents = List<Event>.from(widget.events);
+    _filteredEvents = List<Event>.from(widget.events);
   }
 
-  // Reads events from JSON file (stand-in for database for testing)
-  Future<void> _loadEvents() async {
-    final String response = await rootBundle.loadString('assets/test_events.json');
-    final List<dynamic> decodedJson = json.decode(response);
+  @override
+  // Updates events when passed in events change
+  void didUpdateWidget(covariant SearchView oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
-    final List<Event> loadedEvents = decodedJson
-      .map((eventJson) => Event.fromJson(eventJson as Map<String, dynamic>))
-      .toList();
-
-    setState(() {
-      _allEvents = loadedEvents;
-      _filteredEvents = loadedEvents;
-      _isLoading = false;
-    });
-
+    if (oldWidget.events != widget.events) {
+      _allEvents = List<Event>.from(widget.events);
+      _applyFilter();
+    }
   }
 
   // Handles filtering displayed events based on user search
   void _filterEvents(String query) {
-    final String normalizedQuery = query.toLowerCase().trim();
-
     setState(() {
       _query = query;
-
-      if (normalizedQuery.isEmpty) {
-        _filteredEvents = _allEvents;
-        return;
-      }
-
-      _filteredEvents = _allEvents.where((event) {
-        final String name = event.name.toLowerCase();
-        final String description = event.description.toLowerCase();
-        final String locationName = event.location.name.toLowerCase();
-        final String address = event.location.address!.toLowerCase();
-        final String organizationId = event.organizationId.toLowerCase();
-        final String status = event.status.name.toLowerCase();
-
-        return name.contains(normalizedQuery) ||
-            description.contains(normalizedQuery) ||
-            locationName.contains(normalizedQuery) ||
-            address.contains(normalizedQuery) ||
-            organizationId.contains(normalizedQuery) ||
-            status.contains(normalizedQuery);
-      }).toList();
+      _applyFilter();
     });
+  }
+
+  void _applyFilter() {
+    final String normalizedQuery = _query.toLowerCase().trim();
+
+    if (normalizedQuery.isEmpty) {
+      _filteredEvents = List<Event>.from(_allEvents);
+      return;
+    }
+
+    _filteredEvents = _allEvents.where((event) {
+      final String name = event.name.toLowerCase();
+      final String description = event.description.toLowerCase();
+      final String locationName = event.location.name.toLowerCase();
+      final String address = (event.location.address ?? '').toLowerCase();
+      final String organizationId = event.organizationId.toLowerCase();
+      final String status = event.status.name.toLowerCase();
+
+      return name.contains(normalizedQuery) ||
+          description.contains(normalizedQuery) ||
+          locationName.contains(normalizedQuery) ||
+          address.contains(normalizedQuery) ||
+          organizationId.contains(normalizedQuery) ||
+          status.contains(normalizedQuery);
+    }).toList();
   }
 
   // Helper function to format event time
@@ -135,9 +138,7 @@ class _SearchViewState extends State<SearchView> {
           ),
         ),
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _filteredEvents.isEmpty
+          child: _filteredEvents.isEmpty
               ? const Center(
                 child: Text(
                   'No events found.\nTry another keyword.',
@@ -270,13 +271,14 @@ class _SearchViewState extends State<SearchView> {
     final location = event.location;
 
     if (location.isOnline) {
-      return 'Online';
+      return 'Online Event';
     }
 
-    final parts = [
+    final parts = <String>[
       location.name,
-      location.address,
-    ].where((part) => part != null && part.isNotEmpty).toList();
+      if (location.address != null && location.address!.isNotEmpty)
+        location.address!,
+    ];
 
     return parts.join(' • ');
   }
@@ -412,6 +414,36 @@ class _SearchViewState extends State<SearchView> {
                     label: const Text('View on Map'),
                   )
                 )
+              ],
+              if (widget.canManageEvents) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          widget.onEditEvent?.call(event);
+                        },
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Edit'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: () async {
+                          final deleted = await widget.onDeleteEvent?.call(event);
+                          if (deleted == true && mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        icon: const Icon(Icons.delete),
+                        label: const Text('Delete'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ],
           ),
