@@ -32,7 +32,12 @@
   <title>PinPoint</title>
   <link rel="manifest" href="manifest.json">
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>
+  <script>
+    globalThis.MAPS_API_KEY = "{{MAPS_API_KEY}}";
+    globalThis.GOOGLE_MAP_ID = "{{GOOGLE_MAP_ID}}";
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key={{MAPS_API_KEY}}&libraries=marker"></script>
 </head>
 <body>
   <!--

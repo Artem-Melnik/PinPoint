@@ -7,18 +7,30 @@ import 'package:intl/intl.dart';
 class SearchView extends StatefulWidget {
   final List<Event> events;
   final void Function(Event event)? onEventSelected;
+  final VoidCallback? onDetailsOpened;
+  final VoidCallback? onDetailsClosed;
   final bool canManageEvents;
   final void Function(Event event)? onEditEvent;
   final Future<bool> Function(Event event)? onDeleteEvent;
+  final bool Function(Event event)? isEventSaved;
+  final void Function(Event event)? onToggleSavedEvent;
+  final bool Function(String organizationId)? isOrganizationFollowed;
+  final void Function(String organizationId)? onToggleFollowedOrganization;
   final bool embedded;
 
   const SearchView({
     super.key,
     required this.events,
     this.onEventSelected,
+    this.onDetailsOpened,
+    this.onDetailsClosed,
     this.canManageEvents = false,
     this.onEditEvent,
     this.onDeleteEvent,
+    this.isEventSaved,
+    this.onToggleSavedEvent,
+    this.isOrganizationFollowed,
+    this.onToggleFollowedOrganization,
     this.embedded = false,
   });
 
@@ -59,6 +71,7 @@ class _SearchViewState extends State<SearchView> {
     });
   }
 
+  // Helper function to apply filter to events based on user search
   void _applyFilter() {
     final String normalizedQuery = _query.toLowerCase().trim();
 
@@ -162,7 +175,9 @@ class _SearchViewState extends State<SearchView> {
   // Builds an event card within the search for an existing event
   Widget _buildEventCard(Event event) {
     return InkWell(
-      onTap: () => _showEventDetails(event),
+      onTap: () {
+        _showEventDetails(event);
+      },
       borderRadius: BorderRadius.circular(16),
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -253,17 +268,28 @@ class _SearchViewState extends State<SearchView> {
   }
 
   // Shows event details in a bottom sheet
-  void _showEventDetails(Event event) {
-    showModalBottomSheet(
+  void _showEventDetails(Event event) async {
+    widget.onDetailsOpened?.call();
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return _buildEventDetailSheet(event);
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return _buildEventDetailSheet(
+                event,
+                onRefresh: () => setModalState(() {}),
+            );
+          },
+        );
       },
     );
+
+    widget.onDetailsClosed?.call();
   }
 
   // Helper function to format location text, adapts to online events
@@ -306,7 +332,7 @@ class _SearchViewState extends State<SearchView> {
   }
 
   // Builds the event detail sheet when an event is selected
-  Widget _buildEventDetailSheet(Event event) {
+  Widget _buildEventDetailSheet(Event event, {VoidCallback? onRefresh}) {
     final DateFormat dateFormat = DateFormat('MMM d, yyyy');
     final DateFormat timeFormat = DateFormat('h:mm a');
 
@@ -329,24 +355,48 @@ class _SearchViewState extends State<SearchView> {
                   ),
                 ),
               ),
-              if (event.thumbnailUrl != null && event.thumbnailUrl!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    event.thumbnailUrl!,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+              Stack (
+                children: [
+                  if (event.thumbnailUrl != null && event.thumbnailUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        event.thumbnailUrl!,
+                        width: 180,
                         height: 180,
-                        alignment: Alignment.center,
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.image_not_supported, size: 40),
-                      );
-                    },
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 180,
+                            alignment: Alignment.center,
+                            color: Colors.grey.shade300,
+                            child: const Icon(Icons.image_not_supported, size: 40),
+                          );
+                        },
+                      ),
+                    ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        onPressed: () {
+                          widget.onToggleSavedEvent?.call(event);
+                          onRefresh?.call();
+                        },
+                        icon: Icon(
+                          widget.isEventSaved?.call(event) == true
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
+              ),
               const SizedBox(height: 16),
               Text(
                 event.name,
@@ -415,6 +465,23 @@ class _SearchViewState extends State<SearchView> {
                   )
                 )
               ],
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                onPressed: () {
+                  widget.onToggleFollowedOrganization?.call(event.organizationId);
+                  onRefresh?.call();
+                },
+                icon: Icon(
+                  widget.isOrganizationFollowed?.call(event.organizationId) == true
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                ),
+                label: Text(
+                  widget.isOrganizationFollowed?.call(event.organizationId) == true
+                      ? 'Unfollow Organization'
+                      : 'Follow Organization',
+                ),
+              ),
               if (widget.canManageEvents) ...[
                 const SizedBox(height: 16),
                 Row(

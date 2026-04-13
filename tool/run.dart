@@ -19,19 +19,21 @@ void main() async {
     //   exit(0);
     // });
 
-    final properties = await Properties.fromFile(File('.env').path);
+    final properties = Properties.fromFile(File('.env').path);
     final key = properties.get('MAPS_API_KEY');
+    final mapId = properties.get('GOOGLE_MAP_ID');
 
     // 2. Read the index.html
     final htmlFileTemplate = File('web/index.html.template');
     String contents = await htmlFileTemplate.readAsString();
 
     // 3. Perform the replacement
-    // Assumes you have MAPS_API_KEY in your index.html
-    final updatedContents = contents.replaceAll('MAPS_API_KEY', key!);
+    // Assumes you have MAPS_API_KEY and GOOGLE_MAP_ID in your index.html
+    final updatedContents = contents.replaceAll('{{MAPS_API_KEY}}', key!)
+                                    .replaceAll('{{GOOGLE_MAP_ID}}', mapId!);
     await htmlFile.writeAsString(updatedContents);
 
-    print('✅ API Key injected into index.html');
+    print('✅ API Key & Map ID injected into index.html');
 
     // 4. Start the flutter app
     final process = await Process.start(

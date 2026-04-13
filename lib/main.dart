@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'map_view.dart';
 import 'search_view.dart';
 import 'event_form_dialog.dart';
+import 'saved_view.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'models/models.dart';
@@ -32,35 +33,77 @@ class MainInterface extends StatefulWidget {
 }
 
 class _MainInterfaceState extends State<MainInterface> {
-  Event? _selectedEventFromSearch;
+  Event? _activeEvent;
   int _selectedIndex = 0;
 
   List<Event> _events =[];
+  final Set<String> _savedEventIds = {};
+  final Set<String> _followedOrganizationIds = {};
+  List<Event> get _savedEvents =>
+    _events.where((event) => _savedEventIds.contains(event.id))
+        .toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
   bool _isLoadingEvents = true;
   bool _isEventDialogOpen = false;
+  bool _isSearchDetailsOpen = false;
 
-  MemberRole _currentUserRole = MemberRole.admin;
+  final MemberRole _currentUserRole = MemberRole.admin;
 
   static const double _desktopBreakpoint = 900;
 
+  // Checks if user has event management perms
   bool _canManageEvents() {
     return _currentUserRole == MemberRole.owner ||
       _currentUserRole == MemberRole.admin;
   }
 
+  // Checks if user is the owner of an organization
   bool _isOwner() {
     return _currentUserRole == MemberRole.owner;
   }
 
+  // Checks the resolution of the device to determine if it is a desktop
   bool _isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width >= _desktopBreakpoint;
   }
 
-  // Handles behavior when an event is selected from the search view
-  void _handleSearchEventSelected(Event event) {
+  // Helper for toggling saved events
+  void _toggleSavedEvent(Event event) {
+    setState(() {
+      if (_savedEventIds.contains(event.id)) {
+        _savedEventIds.remove(event.id);
+      } else {
+        _savedEventIds.add(event.id);
+      }
+    });
+  }
+
+  // Handler to check if an event is saved
+  bool _isEventSaved(Event event) {
+    return _savedEventIds.contains(event.id);
+  }
+
+  // Handler to toggle following an organization
+  void _toggleFollowedOrganization(String organizationId) {
+    setState(() {
+      if (_followedOrganizationIds.contains(organizationId)) {
+        _followedOrganizationIds.remove(organizationId);
+      } else {
+        _followedOrganizationIds.add(organizationId);
+      }
+    });
+  }
+
+  // Handler to check if an organization is followed
+  bool _isOrganizationFollowed(String organizationId) {
+    return _followedOrganizationIds.contains(organizationId);
+  }
+
+  // Handles behavior when an event is selected
+  void _handleEventSelected(Event event) {
     setState(() {
       _selectedIndex = 0;
-      _selectedEventFromSearch = event;
+      _activeEvent = event;
     });
   }
 
@@ -72,11 +115,22 @@ class _MainInterfaceState extends State<MainInterface> {
 
     final Widget map = MapView(
       events: _events,
-      selectedEvent: _selectedEventFromSearch,
-      isInteractionLocked: _isEventDialogOpen,
+      selectedEvent: _activeEvent,
+      isInteractionLocked:
+        _isEventDialogOpen || _isSearchDetailsOpen || _activeEvent != null,
+      onEventSelected: _handleEventSelected,
+      onClearSelectedEvent: () {
+        setState(() {
+          _activeEvent = null;
+        });
+      },
       canManageEvents: _canManageEvents(),
       onEditEvent: _openEditEventDialog,
       onDeleteEvent: _confirmDeleteEvent,
+      isEventSaved: _isEventSaved,
+      onToggleSavedEvent: _toggleSavedEvent,
+      isOrganizationFollowed: _isOrganizationFollowed,
+      onToggleFollowedOrganization: _toggleFollowedOrganization,
     );
 
     if (!_isDesktop(context)) {
@@ -92,10 +146,24 @@ class _MainInterfaceState extends State<MainInterface> {
             color: Theme.of(context).colorScheme.surface,
             child: SearchView(
               events: _events,
-              onEventSelected: _handleSearchEventSelected,
+              onEventSelected: _handleEventSelected,
+              onDetailsOpened: () {
+                setState(() {
+                  _isSearchDetailsOpen = true;
+                });
+              },
+              onDetailsClosed: () {
+                setState(() {
+                  _isSearchDetailsOpen = false;
+                });
+              },
               canManageEvents: _canManageEvents(),
               onEditEvent: _openEditEventDialog,
               onDeleteEvent: _confirmDeleteEvent,
+              isEventSaved: _isEventSaved,
+              onToggleSavedEvent: _toggleSavedEvent,
+              isOrganizationFollowed: _isOrganizationFollowed,
+              onToggleFollowedOrganization: _toggleFollowedOrganization,
               embedded: true,
             ),
           ),
@@ -114,10 +182,29 @@ class _MainInterfaceState extends State<MainInterface> {
 
     return SearchView(
       events: _events,
-      onEventSelected: _handleSearchEventSelected,
+      onEventSelected: _handleEventSelected,
       canManageEvents: _canManageEvents(),
       onEditEvent: _openEditEventDialog,
       onDeleteEvent: _confirmDeleteEvent,
+      isEventSaved: _isEventSaved,
+      onToggleSavedEvent: _toggleSavedEvent,
+      isOrganizationFollowed: _isOrganizationFollowed,
+      onToggleFollowedOrganization: _toggleFollowedOrganization,
+    );
+  }
+
+  // Builds saved events/organizations page
+  Widget _buildSavedView() {
+    if (_isLoadingEvents) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SavedView(
+      savedEvents: _savedEvents,
+      followedOrganizationIds: _followedOrganizationIds,
+      onEventSelected: _handleEventSelected,
+      onToggleSavedEvent: _toggleSavedEvent,
+      onToggleFollowedOrganization: _toggleFollowedOrganization,
     );
   }
 
@@ -128,7 +215,7 @@ class _MainInterfaceState extends State<MainInterface> {
     return [
       _buildMapView(context),
       if (!isDesktop) _buildSearchView(),
-      const Center(child: Text('Favorites')),
+      _buildSavedView(),
       const Center(child: Text('Profile')),
     ];
   }
@@ -152,7 +239,12 @@ class _MainInterfaceState extends State<MainInterface> {
       AppDestination(
         icon: Icons.favorite_outlined,
         activeIcon: Icons.favorite,
-        label: "Favorites",
+        label: "Saved",
+      ),
+      AppDestination(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: "Profile",
       ),
     ];
   }
