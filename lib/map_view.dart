@@ -517,7 +517,7 @@ class _MapViewState extends State<MapView> {
     final bool shouldLockMap = widget.isInteractionLocked || isDetailsOpen;
     final Event? activeEvent = widget.selectedEvent ?? _selectedEvent;
 
-    final mapWidget = Stack( // TODO: Make a unified selected-event state btwn all the detail cards :)
+    final mapWidget = Stack(
       children: [
         AbsorbPointer(
           absorbing: shouldLockMap,
