@@ -7,6 +7,7 @@ class ProfileView extends StatelessWidget {
   final bool isPlatformAdmin;
   final int savedEventsCount;
   final int followedOrganizationsCount;
+  final void Function()? onEditProfile;
 
   const ProfileView({
     super.key,
@@ -14,6 +15,7 @@ class ProfileView extends StatelessWidget {
     required this.isPlatformAdmin,
     required this.savedEventsCount,
     required this.followedOrganizationsCount,
+    this.onEditProfile,
   });
 
   // Formats a date to a readable string
@@ -121,9 +123,9 @@ class ProfileView extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: OutlinedButton.icon(
-                      onPressed: null,
+                      onPressed: onEditProfile,
                       icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit Profile (WIP)'),
+                      label: const Text('Edit Profile'),
                     ),
                   ),
                 ],

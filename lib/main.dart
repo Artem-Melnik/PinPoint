@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'map_view.dart';
 import 'search_view.dart';
-import 'event_form_dialog.dart';
 import 'saved_view.dart';
 import 'profile_view.dart';
+import 'event_form_dialog.dart';
+import 'edit_profile_dialog.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'models/models.dart';
@@ -36,7 +37,7 @@ class MainInterface extends StatefulWidget {
 class _MainInterfaceState extends State<MainInterface> {
   Event? _activeEvent;
   int _selectedIndex = 0;
-  late final AppUser _currentUser;
+  AppUser? _currentUser;
 
   List<Event> _events =[];
   final Set<String> _savedEventIds = {};
@@ -212,10 +213,11 @@ class _MainInterfaceState extends State<MainInterface> {
     }
 
     return ProfileView(
-      user: _currentUser,
+      user: _currentUser!,
       isPlatformAdmin: true, // Hardcoded for testing
       savedEventsCount: _savedEvents.length,
       followedOrganizationsCount: _followedOrganizationIds.length,
+      onEditProfile: _openEditProfileDialog,
     );
   }
 
@@ -331,6 +333,22 @@ class _MainInterfaceState extends State<MainInterface> {
     setState(() {
       _events = _events.where((event) => event.id != eventId).toList();
     });
+  }
+
+  // Profile editor dialog handler
+  Future<void> _openEditProfileDialog() async {
+    if (_currentUser == null) return;
+
+    final updatedUser = await showDialog<AppUser>(
+      context: context,
+      builder: (context) => EditProfileDialog(user: _currentUser!),
+    );
+
+    if (updatedUser != null) {
+      setState(() {
+        _currentUser = updatedUser;
+      });
+    }
   }
 
   // Event creation dialog handler
