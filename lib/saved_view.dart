@@ -22,59 +22,61 @@ class SavedView extends StatelessWidget {
   // Builds the saved events and followed organizations page
   Widget build(BuildContext context) {
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            'Saved',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Saved Events',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          if (savedEvents.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('No saved events yet'),
-            )
-          else
-            ...savedEvents.map(
-                (event) => _SavedEventCard(
-                  event: event,
-                  onTap: onEventSelected,
-                  onToggleSaved: onToggleSavedEvent,
-                ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Column(
+          children: [
+            Text(
+              'Saved',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-          const SizedBox(height: 24),
-          Text(
-            'Followed Organizations',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          if (followedOrganizationIds.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('No followed organizations yet'),
-            )
-          else
-            ...followedOrganizationIds.map(
-                (orgId) => Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    title: Text('Organization $orgId'),
-                    subtitle: const Text('Followed'),
-                    trailing: IconButton(
-                      onPressed: () =>
-                          onToggleFollowedOrganization?.call(orgId),
-                      icon: const Icon(Icons.favorite),
+            const SizedBox(height: 20),
+            Text(
+              'Saved Events',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 8),
+            if (savedEvents.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('No saved events yet'),
+              )
+            else
+              ...savedEvents.map(
+                  (event) => _SavedEventCard(
+                    event: event,
+                    onTap: onEventSelected,
+                    onToggleSaved: onToggleSavedEvent,
+                  ),
+              ),
+            const SizedBox(height: 24),
+            Text(
+              'Followed Organizations',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            if (followedOrganizationIds.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('No followed organizations yet'),
+              )
+            else
+              ...followedOrganizationIds.map(
+                  (orgId) => Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      title: Text('Organization $orgId'),
+                      subtitle: const Text('Followed'),
+                      trailing: IconButton(
+                        onPressed: () =>
+                            onToggleFollowedOrganization?.call(orgId),
+                        icon: const Icon(Icons.favorite),
+                      ),
                     ),
                   ),
-                ),
-            ),
-        ],
+              ),
+          ],
+        ),
       ),
     );
   }

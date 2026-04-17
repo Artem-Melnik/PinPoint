@@ -3,6 +3,7 @@ import 'map_view.dart';
 import 'search_view.dart';
 import 'event_form_dialog.dart';
 import 'saved_view.dart';
+import 'profile_view.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'models/models.dart';
@@ -35,6 +36,7 @@ class MainInterface extends StatefulWidget {
 class _MainInterfaceState extends State<MainInterface> {
   Event? _activeEvent;
   int _selectedIndex = 0;
+  late final AppUser _currentUser;
 
   List<Event> _events =[];
   final Set<String> _savedEventIds = {};
@@ -55,11 +57,6 @@ class _MainInterfaceState extends State<MainInterface> {
   bool _canManageEvents() {
     return _currentUserRole == MemberRole.owner ||
       _currentUserRole == MemberRole.admin;
-  }
-
-  // Checks if user is the owner of an organization
-  bool _isOwner() {
-    return _currentUserRole == MemberRole.owner;
   }
 
   // Checks the resolution of the device to determine if it is a desktop
@@ -208,6 +205,20 @@ class _MainInterfaceState extends State<MainInterface> {
     );
   }
 
+  // Builds profile page
+  Widget _buildProfileView(BuildContext context) {
+    if (_isLoadingEvents) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return ProfileView(
+      user: _currentUser,
+      isPlatformAdmin: true, // Hardcoded for testing
+      savedEventsCount: _savedEvents.length,
+      followedOrganizationsCount: _followedOrganizationIds.length,
+    );
+  }
+
   // Page building handler
   List<Widget> _buildPages(BuildContext context) {
     final isDesktop = _isDesktop(context);
@@ -216,7 +227,7 @@ class _MainInterfaceState extends State<MainInterface> {
       _buildMapView(context),
       if (!isDesktop) _buildSearchView(),
       _buildSavedView(),
-      const Center(child: Text('Profile')),
+      _buildProfileView(context),
     ];
   }
 
@@ -252,14 +263,31 @@ class _MainInterfaceState extends State<MainInterface> {
   @override
   void initState() {
     super.initState();
+
+    _loadProfile();
     _loadEvents();
+  }
+
+  // Loads profile from JSON file (for test purposes)
+  Future<void> _loadProfile() async {
+    try {
+      final String profileResponse = await rootBundle.loadString('assets/test_profile.json');
+      final Map<String, dynamic> decodedJson = json.decode(profileResponse) as Map<String, dynamic>;
+      final AppUser loadedUser = AppUser.fromJson(decodedJson);
+      setState(() {
+        _currentUser = loadedUser;
+      });
+    } catch (e, stackTrace) {
+      debugPrint('Error loading profile: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   // Loads events from JSON file (for test purposes)
   Future<void> _loadEvents() async {
     try {
-      final String response = await rootBundle.loadString('assets/test_events.json');
-      final List<dynamic> decodedJson = json.decode(response) as List<dynamic>;
+      final String eventsResponse = await rootBundle.loadString('assets/test_events.json');
+      final List<dynamic> decodedJson = json.decode(eventsResponse) as List<dynamic>;
 
       final List<Event> loadedEvents = decodedJson
           .map((item) => Event.fromJson(item as Map<String, dynamic>))

@@ -1,0 +1,13 @@
+{
+  "id": "user_001",
+  "name": "John Doe",
+  "email": "johndoe@example.com",
+  "profileImageUrl": "https://picsum.photos/204",
+  "bio": "Sophomore pursuing Computer Science. Exploring campus events.",
+  "followedOrganizationIds": ["org_001", "org_002"],
+  "savedEventIds": ["event_001", "event_002"],
+  "memberOrganizationIds": ["org_003"],
+  "createdAt": "2025-04-15T14:30:00.000Z",
+  "updatedAt": "2026-04-14T14:30:00.000Z",
+  "role": "user"
+}

@@ -122,7 +122,7 @@ class _SearchViewState extends State<SearchView> {
           Padding (
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.center,
               child: Text(
                 'Search Events',
                 style: Theme.of(context).textTheme.titleLarge,
