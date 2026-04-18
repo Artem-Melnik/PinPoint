@@ -416,10 +416,6 @@ class _SearchViewState extends State<SearchView> {
                 'Time: ${timeFormat.format(event.startTime)} - ${timeFormat.format(event.endTime)}',
               ),
               const SizedBox(height: 12),
-              Text(
-                'Location: ${event.location.name}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
               if (event.location.isOnline) ...[
                 const Text(
                   'Online Event',
