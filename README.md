@@ -1,17 +1,26 @@
-# pinpoint
+# PinPoint
 
-A new Flutter project.
+An All-In-One Campus Event Map App
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Interactive map with event markers using the Google Maps API
+- Search page (narrow/mobile layout) or side panel (wide/desktop layout) for filtering through events and organizations
+- Saved page for tracking bookmarked/saved events and followed organizations
+- Profile page for tracking user stats and personalization
+- Event creation/editing dialog for admin/owner roles in organizations
+- Adaptive layout depending on screen width
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Frontend: Flutter + Dart
+- Backend: Node.js (WIP)
+- Database: Supabase
+- API: Google Maps API
+- Design: Figma
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Credits
+
+- Anton Zhuk - Frontend Developer
+- Artem Melnik - Backend Developer
+- Lucy Chen - Graphic Designer
